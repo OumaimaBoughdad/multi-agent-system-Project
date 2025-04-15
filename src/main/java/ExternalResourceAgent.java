@@ -1,58 +1,29 @@
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
-import jade.domain.DFService;
-import jade.domain.FIPAAgentManagement.DFAgentDescription;
-import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
+import utils.HttpHelper;
 
 public class ExternalResourceAgent extends Agent {
-    @Override
     protected void setup() {
-        System.out.println("ExternalResourceAgent " + getLocalName() + " is ready.");
+        System.out.println(getLocalName() + " started.");
 
-        // Register the external-resource service in the DF
-        registerService();
+        addBehaviour(new CyclicBehaviour() {
+            public void action() {
+                ACLMessage msg = receive();
+                if (msg != null) {
+                    String query = msg.getContent();
+                    System.out.println(getLocalName() + ": Searching for " + query);
 
-        // Add behavior to handle requests
-        addBehaviour(new RequestHandler());
-    }
+                    String wikipediaResult = HttpHelper.searchExternalSource("wikipedia", query);
+                    String duckResult = HttpHelper.searchExternalSource("duckduckgo", query);
 
-    private void registerService() {
-        DFAgentDescription dfd = new DFAgentDescription();
-        dfd.setName(getAID());
-
-        ServiceDescription sd = new ServiceDescription();
-        sd.setType("external-resource");
-        sd.setName("ExternalResourceAgent");
-        dfd.addServices(sd);
-
-        try {
-            DFService.register(this, dfd);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private class RequestHandler extends CyclicBehaviour {
-        @Override
-        public void action() {
-            ACLMessage msg = receive();
-            if (msg != null) {
-                System.out.println("ExternalResourceAgent received request: " + msg.getContent());
-
-                // Simulate processing the request
-                String responseContent = "Processed externally: " + msg.getContent();
-
-                // Send response
-                ACLMessage reply = msg.createReply();
-                reply.setPerformative(ACLMessage.INFORM);
-                reply.setContent(responseContent);
-                send(reply);
-
-                System.out.println("ExternalResourceAgent sent response.");
-            } else {
-                block();
+                    System.out.println("--- Results for: " + query + " ---");
+                    System.out.println("Wikipedia: " + wikipediaResult);
+                    System.out.println("DuckDuckGo: " + duckResult);
+                } else {
+                    block();
+                }
             }
-        }
+        });
     }
 }

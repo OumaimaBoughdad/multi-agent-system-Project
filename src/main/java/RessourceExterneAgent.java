@@ -1,8 +1,9 @@
 import jade.core.Agent;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.lang.acl.ACLMessage;
+import utils.HttpHelper;
 
-public class BrokerAgent extends Agent {
+public class RessourceExterneAgent extends Agent {
     protected void setup() {
         System.out.println(getLocalName() + " started.");
 
@@ -10,14 +11,11 @@ public class BrokerAgent extends Agent {
             public void action() {
                 ACLMessage msg = receive();
                 if (msg != null) {
-                    String destination = msg.getUserDefinedParameter("target");
+                    String query = msg.getContent();
+                    String result = HttpHelper.searchExternalSource("wikipedia", query)
+                            + "\n\nDuckDuckGo:\n" + HttpHelper.searchExternalSource("duckduckgo", query);
 
-                    ACLMessage redirect = new ACLMessage(ACLMessage.REQUEST);
-                    redirect.setContent(msg.getContent());
-                    redirect.addReceiver(getAID(destination));
-                    send(redirect);
-
-                    System.out.println(getLocalName() + ": Routed to " + destination);
+                    System.out.println(getLocalName() + ": External data fetched:\n" + result);
                 } else {
                     block();
                 }
